@@ -1,51 +1,217 @@
 <!DOCTYPE html>
-<html lang="ar">
+<html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>M4 Core</title>
+    <title>M4 Core - Professional Edition</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        :root { --bmw-blue: #0066b3; --bmw-red: #e7222e; }
-        body { background: #050505; color: white; font-family: sans-serif; text-align: center; overflow: hidden; }
-        .container { padding-top: 50px; }
-        .score-circle {
-            width: 200px; height: 200px; border: 5px solid var(--bmw-blue);
-            border-radius: 50%; margin: 20px auto;
-            display: flex; flex-direction: column; justify-content: center;
-            box-shadow: 0 0 20px var(--bmw-blue);
+        :root {
+            --bmw-blue: #0066b3;
+            --bmw-red: #e7222e;
+            --dark-bg: #0a0a0a;
         }
-        .points { font-size: 3rem; font-weight: bold; }
-        .btn-drive {
-            background: linear-gradient(45deg, var(--bmw-blue), var(--bmw-red));
-            border: none; color: white; padding: 20px 40px;
-            border-radius: 50px; font-size: 1.5rem; font-weight: bold;
-            margin-top: 30px; cursor: pointer;
+
+        body {
+            background-color: var(--dark-bg);
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        .header {
+            margin-top: 30px;
+            text-align: center;
+        }
+
+        .driver-tag {
+            color: var(--bmw-blue);
+            font-weight: bold;
+            letter-spacing: 2px;
+            font-size: 0.9rem;
+        }
+
+        .score-display {
+            margin: 20px 0;
+        }
+
+        #score {
+            font-size: 4.5rem;
+            font-weight: 900;
+            margin: 0;
+            text-shadow: 0 0 25px rgba(0, 102, 179, 0.5);
+        }
+
+        .unit {
+            color: var(--bmw-red);
+            font-weight: bold;
+            letter-spacing: 4px;
+        }
+
+        .engine-container {
+            position: relative;
+            margin-top: 40px;
+        }
+
+        .main-button {
+            width: 220px;
+            height: 220px;
+            background: radial-gradient(circle, #1a1a1a, #000);
+            border: 6px solid #222;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.1s;
+            box-shadow: 0 0 40px rgba(0,0,0,0.6);
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .main-button:active {
+            transform: scale(0.94);
+            border-color: var(--bmw-red);
+        }
+
+        .main-button img {
+            width: 70px;
+            filter: invert(1);
+            margin-bottom: 10px;
+        }
+
+        .main-button span {
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        .bottom-bar {
+            position: fixed;
+            bottom: 40px;
+            display: flex;
+            gap: 15px;
+        }
+
+        .btn-action {
+            background: #151515;
+            border: 1px solid #333;
+            color: white;
+            padding: 12px 25px;
+            border-radius: 12px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* أنيميشن النقاط الطائرة */
+        .tap-float {
+            position: absolute;
+            color: var(--bmw-blue);
+            font-weight: bold;
+            font-size: 1.8rem;
+            pointer-events: none;
+            animation: floatUp 0.8s ease-out forwards;
+        }
+
+        @keyframes floatUp {
+            0% { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(-120px); opacity: 0; }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h2 id="welcome">Welcome, Driver</h2>
-        <div class="score-circle">
-            <span class="points" id="score">0</span>
-            <span>RPM Points</span>
+
+    <div class="header">
+        <div class="driver-tag" id="driver-name">PILOT: LOADING...</div>
+    </div>
+
+    <div class="score-display">
+        <h1 id="score">0</h1>
+        <div class="unit">RPM POINTS</div>
+    </div>
+
+    <div class="engine-container">
+        <div class="main-button" id="tap-btn">
+            <img src="https://www.svgrepo.com/show/443041/engine-start.svg">
+            <span>START ENGINE</span>
         </div>
-        <button class="btn-drive" onclick="tap()">START ENGINE</button>
+    </div>
+
+    <div class="bottom-bar">
+        <div class="btn-action" onclick="inviteFriend()">🎁 دعوة صديق</div>
+        <div class="btn-action" onclick="tg.showAlert('قريباً: متجر التطويرات!')">🚀 متجر</div>
     </div>
 
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
-        
-        let score = parseInt(localStorage.getItem('m4_points')) || 0;
-        document.getElementById('score').innerText = score;
 
-        function tap() {
+        // نظام النقاط مع الحفظ
+        let score = parseInt(localStorage.getItem('m4_score_v2')) || 0;
+        const scoreDisplay = document.getElementById('score');
+        scoreDisplay.innerText = score.toLocaleString();
+
+        // جلب اسم المستخدم
+        if (tg.initDataUnsafe?.user) {
+            document.getElementById('driver-name').innerText = "PILOT: " + tg.initDataUnsafe.user.first_name.toUpperCase();
+        }
+
+        // التعامل مع الضغط
+        const tapBtn = document.getElementById('tap-btn');
+        tapBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault(); // منع الزووم في الآيفون
+            handleTap(e.touches[0].pageX, e.touches[0].pageY);
+        });
+
+        function handleTap(x, y) {
             score += 10;
-            document.getElementById('score').innerText = score;
-            localStorage.setItem('m4_points', score);
-            tg.HapticFeedback.impactOccurred('heavy'); // اهتزاز لمحاكاة المحرك
+            scoreDisplay.innerText = score.toLocaleString();
+            localStorage.setItem('m4_score_v2', score);
+
+            tg.HapticFeedback.impactOccurred('medium');
+            showEffect(x, y);
+        }
+
+        function showEffect(x, y) {
+            const el = document.createElement('div');
+            el.className = 'tap-float';
+            el.innerText = '+10';
+            el.style.left = (x - 20) + 'px';
+            el.style.top = (y - 50) + 'px';
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 800);
+        }
+
+        // نظام الإحالة
+        function inviteFriend() {
+            const user = tg.initDataUnsafe?.user;
+            const refLink = `https://t.me/M4CoreBot?startapp=ref_${user ? user.id : '123'}`;
+            
+            tg.showPopup({
+                title: 'نظام المكافآت',
+                message: `شارك رابطك واحصل على 1000 نقطة عن كل صديق!\n\n${refLink}`,
+                buttons: [
+                    {id: 'copy', type: 'default', text: 'نسخ الرابط'},
+                    {type: 'destructive', text: 'إغلاق'}
+                ]
+            }, (btnId) => {
+                if(btnId === 'copy') {
+                    const input = document.createElement('input');
+                    input.value = refLink;
+                    document.body.appendChild(input);
+                    input.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(input);
+                    tg.showAlert('تم نسخ الرابط بنجاح!');
+                }
+            });
         }
     </script>
 </body>
