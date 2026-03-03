@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>M4 Core</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root { --bmw-blue: #0066b3; --bmw-red: #e7222e; }
+        body { background: #050505; color: white; font-family: sans-serif; text-align: center; overflow: hidden; }
+        .container { padding-top: 50px; }
+        .score-circle {
+            width: 200px; height: 200px; border: 5px solid var(--bmw-blue);
+            border-radius: 50%; margin: 20px auto;
+            display: flex; flex-direction: column; justify-content: center;
+            box-shadow: 0 0 20px var(--bmw-blue);
+        }
+        .points { font-size: 3rem; font-weight: bold; }
+        .btn-drive {
+            background: linear-gradient(45deg, var(--bmw-blue), var(--bmw-red));
+            border: none; color: white; padding: 20px 40px;
+            border-radius: 50px; font-size: 1.5rem; font-weight: bold;
+            margin-top: 30px; cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2 id="welcome">Welcome, Driver</h2>
+        <div class="score-circle">
+            <span class="points" id="score">0</span>
+            <span>RPM Points</span>
+        </div>
+        <button class="btn-drive" onclick="tap()">START ENGINE</button>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        
+        let score = parseInt(localStorage.getItem('m4_points')) || 0;
+        document.getElementById('score').innerText = score;
+
+        function tap() {
+            score += 10;
+            document.getElementById('score').innerText = score;
+            localStorage.setItem('m4_points', score);
+            tg.HapticFeedback.impactOccurred('heavy'); // اهتزاز لمحاكاة المحرك
+        }
+    </script>
+</body>
+</html>
